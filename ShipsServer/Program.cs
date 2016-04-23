@@ -20,7 +20,7 @@ namespace ShipsServer
             UInt32 prevSleepTime = 0;
 
             ///- Work server
-            while (!Server.Server.IsStopped())
+            while (true)
             {
                 ++Server.Server.ServerLoopCounter;
                 realCurrTime = Timer.GetMSTime();

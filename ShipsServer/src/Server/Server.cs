@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using ShipsServer.Networking;
+using ShipsServer.Server.Battle;
 
 namespace ShipsServer.Server
 {
     class Server
     {
         public static UInt32 ServerLoopCounter { get; set; }
-        private static bool m_stopEvent;
 
         private static Server _instance;
 
@@ -32,8 +33,6 @@ namespace ShipsServer.Server
             }
         }
 
-        public static bool IsStopped() { return m_stopEvent; }
-
         public void Update(UInt32 diff)
         {
             lock (_sessionQueueLock)
@@ -58,8 +57,13 @@ namespace ShipsServer.Server
             if (oldSessions.Count != 0)
             {
                 foreach (var session in oldSessions)
+                {
+                    session.Socket.TcpClient.Close();
                     RemoveSession(session.AccountId);
+                }
             }
+
+            BattleMgr.Instance.Update(diff);
         }
 
         public void AddSessionQueue(Session session)

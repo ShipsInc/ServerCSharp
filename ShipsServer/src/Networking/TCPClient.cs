@@ -2,8 +2,8 @@
 using System.Net.Sockets;
 using ShipsServer.Common;
 using ShipsServer.Database;
+using ShipsServer.Enums;
 using ShipsServer.Protocol;
-using ShipsServer.Protocol.Enums;
 using ShipsServer.Server;
 
 namespace ShipsServer.Networking

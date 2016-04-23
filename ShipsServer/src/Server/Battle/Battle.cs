@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using ShipsServer.Common;
-using ShipsServer.Server.Battle.Enums;
+using ShipsServer.Enums;
 
 namespace ShipsServer.Server.Battle
 {
@@ -10,41 +11,39 @@ namespace ShipsServer.Server.Battle
         public int Id { get; set; }
         public BattleStatus Status { get; set; }
 
-        private Board[] _boards;
-        private List<Session> _players;
+        private List<Player> _players;
 
         public Battle()
         {
-            Id = 0;
             Status = BattleStatus.BATTLE_STATUS_INITIAL;
-            _boards = new Board[Constants.MAX_BATTLE_PLAYERS];
-            _players = new List<Session>(Constants.MAX_BATTLE_PLAYERS);
+            _players = new List<Player>(Constants.MAX_BATTLE_PLAYERS);
         }
 
-        public Board GetBoardByAccountId(Session session)
-        {
-            int plrIdx = _players.FindIndex(s => s.AccountId == session.AccountId);
-            if (plrIdx == -1)
-                return null;
-
-            return _boards[plrIdx];
-        }
-
-        public int AddPlayer(Session session)
+        public Player AddPlayer(Session session, Board board)
         {
             if (_players.Count > 2)
                 throw new IndexOutOfRangeException("AddPlayer overflow. Maximum 2 players.");
 
-            _players.Add(session);
-            return _players.Count - 1;
+            _players.Add(new Player(session, board));
+            return _players.Last();
         }
 
-        public void SetBoard(int plrIdx, Board board)
+        public Player GetPlayer(int idx)
         {
-            if (plrIdx > Constants.MAX_BATTLE_PLAYERS)
-                throw new ArgumentOutOfRangeException("SetBoard player index overflow");
+            if (_players.Count > 2)
+                throw new IndexOutOfRangeException("GetPlayer overflow. Maximum 2 players.");
 
-            _boards[plrIdx] = board;
+            return _players[idx];
+        }
+
+        public Player GetPlayerBySession(Session session)
+        {
+            return _players.Find(x => x.Session.AccountId == session.AccountId);
+        }
+
+        public Player GetOponentPlayer(Session session)
+        {
+            return _players.Find(x => x.Session.AccountId != session.AccountId);
         }
     }
 }

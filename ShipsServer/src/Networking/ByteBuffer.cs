@@ -13,9 +13,6 @@ namespace ShipsServer.Networking
         private MemoryStream m = null;
         private BinaryReader r = null;
 
-        private byte curbitval = 0;
-        private byte bitPos = 8;
-
         public ByteBuffer(int size = 1024)
         {
             m = new MemoryStream(size);

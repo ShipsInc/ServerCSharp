@@ -119,8 +119,15 @@ namespace ShipsServer.Networking
 
         public void Write(TcpClient tcpClient, byte[] bytes)
         {
-            NetworkStream networkStream = tcpClient.GetStream();
-            networkStream.BeginWrite(bytes, 0, bytes.Length, WriteCallback, tcpClient);
+            try
+            {
+                NetworkStream networkStream = tcpClient.GetStream();
+                networkStream.BeginWrite(bytes, 0, bytes.Length, WriteCallback, tcpClient);
+            }
+            catch (Exception)
+            {
+                this.clients.RemoveAll(x => x.TcpClient == tcpClient);
+            }
         }
 
         private void WriteCallback(IAsyncResult result)

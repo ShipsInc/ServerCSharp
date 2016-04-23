@@ -1,4 +1,4 @@
-﻿using ShipsServer.Server.Battle.Enums;
+﻿using ShipsServer.Enums;
 
 namespace ShipsServer.Server.Battle
 {
@@ -38,8 +38,8 @@ namespace ShipsServer.Server.Battle
 
         public Rect GetShipRegion()
         {
-            var width = Orientation == ShipOrientation.Horizontal ? Length : 1;
-            var height = Orientation == ShipOrientation.Vertical ? Length : 1;
+            var width = Orientation == ShipOrientation.SHIP_ORIENTATION_HORIZONTAL ? Length : 1;
+            var height = Orientation == ShipOrientation.SHIP_ORIENTATION_VERTICAL ? Length : 1;
 
             return new Rect(X, Y, width, height);
         }

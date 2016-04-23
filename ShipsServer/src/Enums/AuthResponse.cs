@@ -1,4 +1,4 @@
-﻿namespace ShipsServer.Protocol.Enums
+﻿namespace ShipsServer.Enums
 {
     enum AuthResponse : uint
     {

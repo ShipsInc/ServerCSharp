@@ -9,7 +9,6 @@ namespace ShipsServer.Server.Battle
         private int _width;
         private int _height;
 
-
         public Rect(int x, int y, int width, int height)
         {
             X = x;

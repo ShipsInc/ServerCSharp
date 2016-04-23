@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using ShipsServer.Common;
+using ShipsServer.Enums;
 using ShipsServer.Protocol;
-using ShipsServer.Server.Battle.Enums;
 
 namespace ShipsServer.Server.Battle
 {
@@ -70,14 +70,19 @@ namespace ShipsServer.Server.Battle
 
             if (ship == null)
             {
-                _cells[x, y].State = BoardCellState.MissedShot;
-                return ShotResult.Missed;
+                _cells[x, y].State = BoardCellState.BOARD_CELL_STATE_MISSED_SHOT;
+                return ShotResult.SHOT_RESULT_MISSED;
             }
-            _cells[x, y].State = BoardCellState.ShotShip;
+            _cells[x, y].State = BoardCellState.BOARD_CELL_STATE_MISSED_SHOT_SHIP;
 
             ship.HitCount++;
 
-            return ship.IsDrowned ? ShotResult.ShipDrowned : ShotResult.ShipHit;
+            return ship.IsDrowned ? ShotResult.SHOT_RESULT_SHIP_DROWNED : ShotResult.SHOT_RESULT_SHIP_HIT;
+        }
+
+        public bool IsAllShipsDrowned()
+        {
+            return _ships.All(ship => ship.IsDrowned);
         }
     }
 }

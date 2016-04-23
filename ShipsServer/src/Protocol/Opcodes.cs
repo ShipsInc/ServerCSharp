@@ -17,6 +17,14 @@
         CMSG_BATTLE_JOIN            = 0x00D,
         SMSG_BATTLE_RESPONSE        = 0x00E,
         SMSG_BATTLE_INITIAL_BATTLE  = 0x00F,
+        CMSG_BATTLE_SHOT            = 0x010,
+        SMSG_BATTLE_SHOT_RESULT     = 0x011,
+        SMSG_BATTLE_CAN_SHOT        = 0x012,
+        SMSG_BATTLE_OPONENT_JOINED  = 0x013,
+        SMSG_BATTLE_SHIP_DROWNED    = 0x014,
+        CMSG_BATTLE_LEAVE           = 0x015,
+        SMSG_BATTLE_OPONENT_LEAVE   = 0x016,
+        SMSG_BATTLE_FINISH          = 0x017,
         MAX_OPCODE,
     }
 }

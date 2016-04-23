@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using ShipsServer.Enums;
 
 namespace ShipsServer.Server.Battle
 {
@@ -39,6 +41,17 @@ namespace ShipsServer.Server.Battle
         public void RemoveBattle(Battle battle)
         {
             BattleList.Remove(battle);
+        }
+
+        public Battle GetBattle(int id)
+        {
+            return BattleList.Find(x => x.Id == id);
+        }
+
+        public void Update(UInt32 diff)
+        {
+            // Очистка завершённых игар
+            BattleList.RemoveAll(battle => battle.Status == BattleStatus.BATTLE_STATUS_DONE);
         }
     }
 }
