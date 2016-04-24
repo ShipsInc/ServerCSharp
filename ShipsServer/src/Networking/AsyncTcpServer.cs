@@ -88,24 +88,9 @@ namespace ShipsServer.Networking
             lock (this.clients)
             {
                 foreach (TCPClient client in this.clients)
-                {
                     client.TcpClient.Client.Disconnect(false);
-                }
+
                 this.clients.Clear();
-            }
-        }
-
-        public void Write(TcpClient tcpClient, string data)
-        {
-            byte[] bytes = this.Encoding.GetBytes(data);
-            Write(tcpClient, bytes);
-        }
-
-        public void Write(string data)
-        {
-            foreach (TCPClient client in this.clients)
-            {
-                Write(client.TcpClient, data);
             }
         }
 

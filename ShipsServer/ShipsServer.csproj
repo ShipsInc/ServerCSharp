@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\Common\Constants.cs" />
+    <Compile Include="src\Common\Cryptography.cs" />
     <Compile Include="src\Common\Hashers\MD5.cs" />
     <Compile Include="src\Common\Timer.cs" />
     <Compile Include="src\Database\MySQL.cs" />

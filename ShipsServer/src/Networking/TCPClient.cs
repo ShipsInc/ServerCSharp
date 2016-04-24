@@ -36,7 +36,8 @@ namespace ShipsServer.Networking
             if (bytes == 0)
                 return;
 
-            Packet packet = ParsePacket(Buffer);
+            byte[] decryptBytes = Cryptography.Decrypt(Buffer);
+            Packet packet = ParsePacket(decryptBytes);
             Array.Clear(Buffer, 0, Buffer.Length);
             if (packet == null)
                 return;
@@ -49,7 +50,7 @@ namespace ShipsServer.Networking
         {
             WriteHeader(packet);
             Console.WriteLine($"Send packet {((Opcodes)packet.Opcode).ToString()} to client {TcpClient.Client.RemoteEndPoint.ToString()}");
-            AsyncTcpServer.Instanse.Write(TcpClient, packet.ToArray());
+            AsyncTcpServer.Instanse.Write(TcpClient, Cryptography.Encrypt(packet.ToArray()));
         }
 
         public void Close()
