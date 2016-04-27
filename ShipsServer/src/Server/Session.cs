@@ -9,7 +9,7 @@ namespace ShipsServer.Server
     {
         private static UInt32 SOCKET_TIMEOUT = 30000;
         private Int32 TimeOutTime { get; set; }
-        public TCPClient Socket { get; private set; }
+        private TCPClient Socket { get; set; }
         public string Username { get; private set; }
         public UInt32 AccountId { get; private set; }
         public string Address { get; private set; }
@@ -35,13 +35,16 @@ namespace ShipsServer.Server
         public bool Update(UInt32 diff)
         {
             if (IsLogout)
+            {
+                Socket?.TcpClient.Close();
                 return false;
+            }
 
             UpdateTimeOutTime(diff);
 
             if (IsConnectionIdle())
             {
-                Socket.TcpClient.Close();
+                Socket?.TcpClient.Close();
                 return false;
             }
 
@@ -78,6 +81,14 @@ namespace ShipsServer.Server
         private bool IsConnectionIdle()
         {
             return TimeOutTime <= 0;
+        }
+
+        public void SendPacket(Packet packet)
+        {
+            if (Socket == null || !Socket.TcpClient.Connected)
+                return;
+
+            Socket.SendPacket(packet);
         }
 
         public void QueuePacket(Packet packet)

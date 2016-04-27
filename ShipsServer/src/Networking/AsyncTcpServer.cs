@@ -28,7 +28,7 @@ namespace ShipsServer.Networking
                     {
                         if (_instance == null)
                         {
-                            IPAddress addr = new IPAddress(new byte[] { 127, 0, 0, 1 });
+                            IPAddress addr = new IPAddress(new byte[] { 0, 0, 0, 0 });
                             _instance = new AsyncTcpServer(addr, 30000);
                         }
                     }

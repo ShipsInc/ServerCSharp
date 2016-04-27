@@ -33,8 +33,8 @@ namespace ShipsServer.Server.Battle
             {
                 var length = packet.ReadUInt8();
                 var orientation = packet.ReadUInt8();
-                var x = packet.ReadInt16();
-                var y = packet.ReadInt16();
+                var x = packet.ReadUInt8();
+                var y = packet.ReadUInt8();
                 var hitCount = packet.ReadUInt8();
                 _ships.Add(new Ship(length, (ShipOrientation)orientation, x, y, hitCount));
             }

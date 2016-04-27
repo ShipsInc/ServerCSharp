@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using ShipsServer.Networking;
 using ShipsServer.Server.Battle;
 
@@ -48,19 +49,15 @@ namespace ShipsServer.Server
                 return;
 
             List<Session> oldSessions = new List<Session>();
-            foreach (var session in _sessionsList)
+            lock (_sessionLock)
             {
-                if (!session.Update(diff))
-                    oldSessions.Add(session);
+                oldSessions.AddRange(_sessionsList.Where(session => !session.Update(diff)));
             }
 
             if (oldSessions.Count != 0)
             {
-                foreach (var session in oldSessions)
-                {
-                    session.Socket.TcpClient.Close();
+                foreach (var session in oldSessions)      
                     RemoveSession(session.AccountId);
-                }
             }
 
             BattleMgr.Instance.Update(diff);

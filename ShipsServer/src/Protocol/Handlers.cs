@@ -104,8 +104,8 @@ namespace ShipsServer.Server
                 return;
             }
 
-            var x = packet.ReadInt16();
-            var y = packet.ReadInt16();
+            var x = packet.ReadUInt8();
+            var y = packet.ReadUInt8();
 
             var result = player.Shot(x, y, oponent);
 
@@ -117,26 +117,26 @@ namespace ShipsServer.Server
             if (shot.Opcode == (int)Opcodes.SMSG_BATTLE_SHOT_RESULT)
             {
                 shot.WriteUInt8((byte)result);
-                shot.WriteInt16((short)x);
-                shot.WriteInt16((short)y);
+                shot.WriteUInt8((byte)x);
+                shot.WriteUInt8((byte)y);
             }
             else
             {
-                Ship ship = oponent.Board.GetShipAt(x, y);
+                var ship = oponent.Board.GetShipAt(x, y);
                 shot.WriteUInt8((byte)ship.GetShipRegion().GetPoints().Count);
                 foreach (var point in ship.GetShipRegion().GetPoints())
                 {
-                    shot.WriteInt16((short)point.X);
-                    shot.WriteInt16((short)point.Y);
+                    shot.WriteUInt8((byte)point.X);
+                    shot.WriteUInt8((byte)point.Y);
                 }
 
                 shot.WriteUInt8((byte)ship.Length);
                 shot.WriteUInt8((byte)ship.Orientation);
-                shot.WriteInt16((short)ship.X);
-                shot.WriteInt16((short)ship.Y);
+                shot.WriteUInt8((byte)ship.X);
+                shot.WriteUInt8((byte)ship.Y);
             }
 
-            player.Session.Socket.SendPacket(shot);
+            player.Session.SendPacket(shot);
 
             if (result != ShotResult.SHOT_RESULT_MISSED)
             {
@@ -145,20 +145,26 @@ namespace ShipsServer.Server
                     // Игроку который выйграл
                     var finishPacket = new Packet((int)Opcodes.SMSG_BATTLE_FINISH);
                     finishPacket.WriteUInt8(1);
-                    player.Session.Socket.SendPacket(finishPacket);
+                    player.Session.SendPacket(finishPacket);
 
                     // Опоненту
                     finishPacket.Clear();
                     finishPacket.WriteUInt8(0);
-                    oponent.Session.Socket.SendPacket(finishPacket);
+                    oponent.Session.SendPacket(finishPacket);
 
                     battle.Status = BattleStatus.BATTLE_STATUS_DONE;
                 }
+
+                var oponentShotResult = new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_SHOT_RESULT);
+                oponentShotResult.WriteUInt8((byte)result);
+                oponentShotResult.WriteUInt8((byte)x);
+                oponentShotResult.WriteUInt8((byte)y);
+                oponent.Session.SendPacket(oponentShotResult);
                 return;
             }
 
             oponent.CanShot = true;
-            oponent.Session.Socket.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_CAN_SHOT));
+            oponent.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_CAN_SHOT));
         }
 
         private void HandleBattleJoin(Packet packet)
@@ -182,7 +188,7 @@ namespace ShipsServer.Server
             var joined = new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_JOINED);
             joined.WriteUTF8String(player.Session.Username);
             joined.WriteUTF8String(player2.Session.Username);
-            player.Session.Socket.SendPacket(joined);
+            player.Session.SendPacket(joined);
 
             // Отправка информации о противнике для второго игрока
             var plrResponse = new Packet((int)Opcodes.SMSG_BATTLE_RESPONSE);
@@ -190,12 +196,12 @@ namespace ShipsServer.Server
             plrResponse.WriteInt32(battle.Id);
             plrResponse.WriteUTF8String(player2.Session.Username);
             plrResponse.WriteUTF8String(player.Session.Username);
-            player2.Session.Socket.SendPacket(plrResponse);
+            player2.Session.SendPacket(plrResponse);
 
             // Выбор случайного игрока для начала
             var canPlayer = battle.GetPlayer(new Random().Next(Constants.MAX_BATTLE_PLAYERS));
             canPlayer.CanShot = true;
-            canPlayer.Session.Socket.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_CAN_SHOT));
+            canPlayer.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_CAN_SHOT));
         }
 
         private void HandleBattleLeave(Packet packet)
@@ -204,12 +210,13 @@ namespace ShipsServer.Server
             if (battle == null)
                 return;
 
+            BattleMgr.Instance.RemoveBattle(battle);
+
             var oponent = battle.GetOponentPlayer(this);
             if (oponent == null)
                 return;
 
-            oponent.Session.Socket.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
-            BattleMgr.Instance.RemoveBattle(battle);
+            oponent.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
         }
     }
 }

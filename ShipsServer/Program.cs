@@ -3,7 +3,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using ShipsServer.Networking;
-using ShipsServer.Server;
 using Timer = ShipsServer.Common.Timer;
 
 namespace ShipsServer
@@ -50,7 +49,7 @@ namespace ShipsServer
         static void Main(string[] args)
         {
             InitialThreads();
-            Task.Factory.StartNew(() => { new AsyncTcpServer(IPAddress.Parse("127.0.0.1"), 8085).Start(); });
+            Task.Factory.StartNew(() => { new AsyncTcpServer(IPAddress.Parse("0.0.0.0"), 8085).Start(); });
             ServerUpdateLoop();
         }
     }
