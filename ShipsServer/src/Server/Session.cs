@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using ShipsServer.Common;
 using ShipsServer.Networking;
 using ShipsServer.Protocol;
 
@@ -7,15 +8,27 @@ namespace ShipsServer.Server
 {
     public partial class Session
     {
-        private static UInt32 SOCKET_TIMEOUT = 30000;
         private Int32 TimeOutTime { get; set; }
+        private Int32 SaveInverval { get; set; }
         private TCPClient Socket { get; set; }
         public string Username { get; private set; }
         public UInt32 AccountId { get; private set; }
         public string Address { get; private set; }
 
-        public bool IsLogout { get; set; }
+        private bool _logout;
+        public bool IsLogout
+        {
+            get { return _logout; }
+            set
+            {
+                if (!_logout && _logout != value)
+                    OnLogout();
 
+                _logout = value;
+            }
+        }
+
+        public Statistics BattleStatistics { get; set; }
         private Queue<Packet> _packetQueue;
 
         public Session(string username, UInt32 id, TCPClient client)
@@ -26,19 +39,20 @@ namespace ShipsServer.Server
 
             IsLogout = false;
 
+            SaveInverval = (Int32)Constants.SAVE_INTERVAL;
+
             Address = client.TcpClient.Client.RemoteEndPoint.ToString();
 
             _packetQueue = new Queue<Packet>();
             ResetTimeOutTime();
+
+            BattleStatistics = new Statistics(id);
         }
 
-        public bool Update(UInt32 diff)
+        public bool Update(int diff)
         {
             if (IsLogout)
-            {
-                Socket?.TcpClient.Close();
                 return false;
-            }
 
             UpdateTimeOutTime(diff);
 
@@ -47,6 +61,14 @@ namespace ShipsServer.Server
                 Socket?.TcpClient.Close();
                 return false;
             }
+
+            if (SaveInverval < diff)
+            {
+                BattleStatistics.SaveToDB();
+                SaveInverval = Constants.SAVE_INTERVAL;
+            }
+            else
+                SaveInverval -= (int) diff;
 
             if (_packetQueue.Count != 0)
             {
@@ -68,14 +90,14 @@ namespace ShipsServer.Server
             Socket?.Close();
         }
 
-        private void UpdateTimeOutTime(UInt32 diff)
+        private void UpdateTimeOutTime(int diff)
         {
-            TimeOutTime -= (Int32)diff;
+            TimeOutTime -= (int)diff;
         }
 
         private void ResetTimeOutTime()
         {
-            TimeOutTime = (Int32)SOCKET_TIMEOUT;
+            TimeOutTime = (int)Constants.SOCKET_TIMEOUT;
         }
 
         private bool IsConnectionIdle()
@@ -97,6 +119,11 @@ namespace ShipsServer.Server
             {
                 _packetQueue.Enqueue(packet);
             }
+        }
+
+        private void OnLogout()
+        {
+            BattleStatistics.SaveToDB();
         }
     }
 }

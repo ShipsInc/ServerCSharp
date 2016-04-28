@@ -33,7 +33,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MySql.Data, Version=6.9.8.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL" />
+    <Reference Include="MySql.Data, Version=6.9.8.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\MySql.Data.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -49,7 +52,7 @@
     <Compile Include="src\Common\Constants.cs" />
     <Compile Include="src\Common\Cryptography.cs" />
     <Compile Include="src\Common\Hashers\MD5.cs" />
-    <Compile Include="src\Common\Timer.cs" />
+    <Compile Include="src\Common\Time.cs" />
     <Compile Include="src\Database\MySQL.cs" />
     <Compile Include="src\Networking\ByteBuffer.cs" />
     <Compile Include="src\Networking\AsyncTcpServer.cs" />
@@ -75,6 +78,7 @@
     <Compile Include="src\Server\Battle\Ship.cs" />
     <Compile Include="src\Server\Server.cs" />
     <Compile Include="src\Server\Session.cs" />
+    <Compile Include="src\Server\Statistics.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

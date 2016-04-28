@@ -19,6 +19,15 @@ namespace ShipsServer.Server.Battle
             _players = new List<Player>(Constants.MAX_BATTLE_PLAYERS);
         }
 
+        public void Finish(Player winner, Player looser)
+        {
+            winner.Session.BattleStatistics.Wins += 1;
+            winner.Session.BattleStatistics.LastBattle = Time.UnixTimeNow();
+            looser.Session.BattleStatistics.Loose += 1;
+            looser.Session.BattleStatistics.LastBattle = Time.UnixTimeNow();
+            Status = BattleStatus.BATTLE_STATUS_DONE;
+        }
+
         public Player AddPlayer(Session session, Board board)
         {
             if (_players.Count > 2)

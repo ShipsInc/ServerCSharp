@@ -1,5 +1,6 @@
 ﻿using System;
 using ShipsServer.Common;
+using ShipsServer.Database;
 using ShipsServer.Enums;
 using ShipsServer.Protocol;
 using ShipsServer.Server.Battle;
@@ -8,7 +9,7 @@ namespace ShipsServer.Server
 {
     public partial class Session
     {
-        public void SelectHandler(Packet packet)
+        private void SelectHandler(Packet packet)
         {
             switch ((Opcodes)packet.Opcode)
             {
@@ -32,6 +33,9 @@ namespace ShipsServer.Server
                     break;
                 case Opcodes.CMSG_BATTLE_LEAVE:
                     HandleBattleLeave(packet);
+                    break;
+                case Opcodes.CMSG_GET_STATISTICS:
+                    HandleGetStatistics(packet);
                     break;
                 default:
                     Console.WriteLine($"Unknown opcode {((Opcodes)packet.Opcode).ToString()}");
@@ -140,6 +144,7 @@ namespace ShipsServer.Server
 
             if (result != ShotResult.SHOT_RESULT_MISSED)
             {
+                // Все корабли противника разрушены
                 if (oponent.Board.IsAllShipsDrowned())
                 {
                     // Игроку который выйграл
@@ -152,7 +157,7 @@ namespace ShipsServer.Server
                     finishPacket.WriteUInt8(0);
                     oponent.Session.SendPacket(finishPacket);
 
-                    battle.Status = BattleStatus.BATTLE_STATUS_DONE;
+                    battle.Finish(player, oponent);
                 }
 
                 var oponentShotResult = new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_SHOT_RESULT);
@@ -207,16 +212,22 @@ namespace ShipsServer.Server
         private void HandleBattleLeave(Packet packet)
         {
             var battle = BattleMgr.Instance.GetBattle(packet.ReadInt32());
-            if (battle == null)
-                return;
 
-            BattleMgr.Instance.RemoveBattle(battle);
+            // Выход во врея игры
+            var oponent = battle?.GetOponentPlayer(this);
+            if (oponent == null) return;
 
-            var oponent = battle.GetOponentPlayer(this);
-            if (oponent == null)
-                return;
+            battle.Finish(oponent, battle.GetPlayerBySession(this));
+            oponent.Session.SendPacket(new Packet((int) Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
+        }
 
-            oponent.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
+        private void HandleGetStatistics(Packet packet)
+        {
+            var response = new Packet((int)Opcodes.SMSG_GET_STATISTICS_RESPONSE);
+            response.WriteUInt32((ushort)BattleStatistics.LastBattle);
+            response.WriteUInt16((ushort)BattleStatistics.Wins);
+            response.WriteUInt16((ushort)BattleStatistics.Loose);
+            SendPacket(response);
         }
     }
 }

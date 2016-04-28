@@ -3,7 +3,7 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using ShipsServer.Networking;
-using Timer = ShipsServer.Common.Timer;
+using Time = ShipsServer.Common.Time;
 
 namespace ShipsServer
 {
@@ -13,25 +13,25 @@ namespace ShipsServer
 
         private static void ServerUpdateLoop()
         {
-            UInt32 realCurrTime = 0;
-            UInt32 realPrevTime = Timer.GetMSTime();
+            int realCurrTime = 0;
+            int realPrevTime = Time.GetMSTime();
 
-            UInt32 prevSleepTime = 0;
+            int prevSleepTime = 0;
 
             ///- Work server
             while (true)
             {
                 ++Server.Server.ServerLoopCounter;
-                realCurrTime = Timer.GetMSTime();
+                realCurrTime = Time.GetMSTime();
 
-                UInt32 diff = Timer.GetMSTimeDiff(realPrevTime, realCurrTime);
+                int diff = Time.GetMSTimeDiff(realPrevTime, realCurrTime);
 
                 Server.Server.Instance.Update(diff);
                 realPrevTime = realCurrTime;
 
                 if (diff <= SERVER_SLEEP_CONST + prevSleepTime)
                 {
-                    prevSleepTime = SERVER_SLEEP_CONST + prevSleepTime - diff;
+                    prevSleepTime = (int)SERVER_SLEEP_CONST + prevSleepTime - diff;
                     Thread.Sleep((int)prevSleepTime);
                 }
                 else
@@ -41,8 +41,8 @@ namespace ShipsServer
 
         private static void InitialThreads()
         {
-            int MaxThreadsCount = Environment.ProcessorCount * 4;
-            ThreadPool.SetMaxThreads(MaxThreadsCount, MaxThreadsCount);
+            var maxThreadsCount = Environment.ProcessorCount * 4;
+            ThreadPool.SetMaxThreads(maxThreadsCount, maxThreadsCount);
             ThreadPool.SetMinThreads(2, 2);
         }
 

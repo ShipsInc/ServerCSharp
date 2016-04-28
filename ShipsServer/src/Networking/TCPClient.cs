@@ -108,6 +108,7 @@ namespace ShipsServer.Networking
                 }
                 case Opcodes.CMSG_LOGOUT:
                 {
+                    _session.IsLogout = true;
                     _session = null;
                     break;
                 }
@@ -119,6 +120,9 @@ namespace ShipsServer.Networking
                         return false;
                     }
 
+                    if (_session.IsLogout)
+                        return false;
+
                     _session.QueuePacket(packet);
                     break;
                 }
@@ -127,7 +131,7 @@ namespace ShipsServer.Networking
             return true;
         }
 
-        public void HandleAuth(Packet packet)
+        private void HandleAuth(Packet packet)
         {
             string username = packet.ReadUTF8String();
             string password = packet.ReadUTF8String();
@@ -135,6 +139,8 @@ namespace ShipsServer.Networking
             AuthResponse responseCode = AuthResponse.AUTH_RESPONSE_SUCCESS;
 
             var mysql = MySQL.Instance();
+            var uName = string.Empty;
+            uint accountId = 0;
             using (var reader = mysql.Execute($"SELECT `Id`, `username`, `name` FROM `users` WHERE `username` = '{username}' AND `password` = '{MD5Hash.Get(username + ":" + password)}'"))
             {
                 if (reader == null || _session != null)
@@ -144,9 +150,15 @@ namespace ShipsServer.Networking
 
                 if (responseCode == AuthResponse.AUTH_RESPONSE_SUCCESS)
                 {
-                    _session = new Session(reader.GetString(1), reader.GetUInt32(0), this);
-                    Server.Server.Instance.AddSessionQueue(_session);
+                    accountId = reader.GetUInt32(0);
+                    uName = reader.GetString(1);
                 }
+            }
+
+            if (!string.IsNullOrEmpty(uName) && accountId != 0)
+            {
+                _session = new Session(uName, accountId, this);
+                Server.Server.Instance.AddSessionQueue(_session);
             }
 
             var response = new Packet((int)Opcodes.SMSG_AUTH_RESPONSE);
@@ -154,7 +166,7 @@ namespace ShipsServer.Networking
             SendPacket(response);
         }
 
-        public void HandleRegistration(Packet packet)
+        private void HandleRegistration(Packet packet)
         {
             string username = packet.ReadUTF8String();
             string password = packet.ReadUTF8String();
@@ -172,10 +184,10 @@ namespace ShipsServer.Networking
 
             if (responseCode == RegistrationResponse.REG_RESPONSE_SUCCESS)
             {
-                int insertId = mysql.PExecute($"INSERT INTO `users` (`username`, `password`) VALUES ('{username}', '{MD5Hash.Get(username + ":" + password)}')");
+                var insertId = mysql.PExecute($"INSERT INTO `users` (`username`, `password`) VALUES ('{username}', '{MD5Hash.Get(username + ":" + password)}')");
                 if (insertId != -1)
                 {
-                    _session = new Server.Session(username, (uint)insertId, this);
+                    _session = new Session(username, (uint)insertId, this);
                     Server.Server.Instance.AddSessionQueue(_session);
                 }
                 else

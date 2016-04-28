@@ -34,7 +34,7 @@ namespace ShipsServer.Server
             }
         }
 
-        public void Update(UInt32 diff)
+        public void Update(int diff)
         {
             lock (_sessionQueueLock)
             {

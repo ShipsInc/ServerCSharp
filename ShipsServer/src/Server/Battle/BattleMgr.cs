@@ -48,7 +48,7 @@ namespace ShipsServer.Server.Battle
             return BattleList.Find(x => x.Id == id);
         }
 
-        public void Update(UInt32 diff)
+        public void Update(int diff)
         {
             // Очистка завершённых игар
             BattleList.RemoveAll(battle => battle.Status == BattleStatus.BATTLE_STATUS_DONE);
