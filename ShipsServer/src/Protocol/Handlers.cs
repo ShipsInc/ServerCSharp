@@ -1,6 +1,5 @@
 ﻿using System;
 using ShipsServer.Common;
-using ShipsServer.Database;
 using ShipsServer.Enums;
 using ShipsServer.Protocol;
 using ShipsServer.Server.Battle;
@@ -224,7 +223,7 @@ namespace ShipsServer.Server
         private void HandleGetStatistics(Packet packet)
         {
             var response = new Packet((int)Opcodes.SMSG_GET_STATISTICS_RESPONSE);
-            response.WriteUInt32((ushort)BattleStatistics.LastBattle);
+            response.WriteUInt32((uint)BattleStatistics.LastBattle);
             response.WriteUInt16((ushort)BattleStatistics.Wins);
             response.WriteUInt16((ushort)BattleStatistics.Loose);
             SendPacket(response);

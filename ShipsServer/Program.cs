@@ -51,6 +51,7 @@ namespace ShipsServer
             InitialThreads();
             Task.Factory.StartNew(() => { new AsyncTcpServer(IPAddress.Parse("0.0.0.0"), 8085).Start(); });
             ServerUpdateLoop();
+            AsyncTcpServer.Instanse.Stop();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Timers;
 using ShipsServer.Common;
 using ShipsServer.Networking;
 using ShipsServer.Protocol;
@@ -14,7 +15,7 @@ namespace ShipsServer.Server
         public string Username { get; private set; }
         public UInt32 AccountId { get; private set; }
         public string Address { get; private set; }
-
+        private Timer saveSessionTimer;
         private bool _logout;
         public bool IsLogout
         {
@@ -47,6 +48,10 @@ namespace ShipsServer.Server
             ResetTimeOutTime();
 
             BattleStatistics = new Statistics(id);
+
+            saveSessionTimer = new Timer(15000);
+            saveSessionTimer.Enabled = true;
+            saveSessionTimer.Elapsed += new ElapsedEventHandler(SaveSession);
         }
 
         public bool Update(int diff)
@@ -122,6 +127,11 @@ namespace ShipsServer.Server
         }
 
         private void OnLogout()
+        {
+            BattleStatistics.SaveToDB();
+        }
+
+        private void SaveSession(object source, ElapsedEventArgs e)
         {
             BattleStatistics.SaveToDB();
         }

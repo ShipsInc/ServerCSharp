@@ -13,7 +13,7 @@ namespace ShipsServer.Networking
         public TcpClient TcpClient { get; private set; }
         public byte[] Buffer { get; private set; }
         public NetworkStream NetworkStream => TcpClient.GetStream();
-
+        public bool IsClosed { get; set; }
         private Session _session;
 
         public TCPClient(TcpClient tcpClient)
@@ -23,7 +23,8 @@ namespace ShipsServer.Networking
 
             this.TcpClient = tcpClient;
             this.Buffer = new byte[256];
-            _session = null;
+            this.IsClosed = false;
+            this._session = null;
         }
 
         ~TCPClient()
@@ -112,6 +113,11 @@ namespace ShipsServer.Networking
                     _session = null;
                     break;
                 }
+                case Opcodes.CMSG_DISCONNECTED:
+                {
+                    IsClosed = true;
+                    break;
+                }
                 default:
                 {
                     if (_session == null)
@@ -133,8 +139,8 @@ namespace ShipsServer.Networking
 
         private void HandleAuth(Packet packet)
         {
-            string username = packet.ReadUTF8String();
-            string password = packet.ReadUTF8String();
+            var username = packet.ReadUTF8String();
+            var password = packet.ReadUTF8String();
 
             AuthResponse responseCode = AuthResponse.AUTH_RESPONSE_SUCCESS;
 

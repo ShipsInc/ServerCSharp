@@ -4,7 +4,6 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Timers;
 
 namespace ShipsServer.Networking
@@ -17,7 +16,7 @@ namespace ShipsServer.Networking
         private static object syncRoot = new object();
         private static AsyncTcpServer _instance;
 
-        private System.Timers.Timer UpdateClients = new System.Timers.Timer(10000);
+        private Timer _updateClients = new Timer(10000);
         public static AsyncTcpServer Instanse
         {
             get
@@ -28,7 +27,7 @@ namespace ShipsServer.Networking
                     {
                         if (_instance == null)
                         {
-                            IPAddress addr = new IPAddress(new byte[] { 0, 0, 0, 0 });
+                            var addr = new IPAddress(new byte[] { 0, 0, 0, 0 });
                             _instance = new AsyncTcpServer(addr, 30000);
                         }
                     }
@@ -39,41 +38,30 @@ namespace ShipsServer.Networking
 
         public AsyncTcpServer(IPAddress localaddr, int port) : this()
         {
-            UpdateClients.Enabled = true;
-            UpdateClients.Elapsed += new ElapsedEventHandler(UpdateClientsTimer);
+            this._updateClients.Enabled = true;
+            this._updateClients.Elapsed += new ElapsedEventHandler(UpdateClientsTimer);
 
-            Listener = new TcpListener(localaddr, port);
+            this.Listener = new TcpListener(localaddr, port);
         }
 
         public AsyncTcpServer(IPEndPoint localEP) : this()
         {
-            UpdateClients.Enabled = true;
-            UpdateClients.Elapsed += new ElapsedEventHandler(UpdateClientsTimer);
+            this._updateClients.Enabled = true;
+            this._updateClients.Elapsed += new ElapsedEventHandler(UpdateClientsTimer);
 
             Listener = new TcpListener(localEP);
         }
 
         private AsyncTcpServer()
         {
-            UpdateClients.Enabled = true;
-            UpdateClients.Elapsed += new ElapsedEventHandler(UpdateClientsTimer);
+            this._updateClients.Enabled = true;
+            this._updateClients.Elapsed += new ElapsedEventHandler(UpdateClientsTimer);
 
             this.Encoding = Encoding.Default;
             this.clients = new List<TCPClient>();
         }
 
         public Encoding Encoding { get; set; }
-
-        public IEnumerable<TcpClient> Clients
-        {
-            get
-            {
-                foreach (TCPClient client in this.clients)
-                {
-                    yield return client.TcpClient;
-                }
-            }
-        }
 
         public void Start()
         {
@@ -87,7 +75,7 @@ namespace ShipsServer.Networking
             this.Listener.Stop();
             lock (this.clients)
             {
-                foreach (TCPClient client in this.clients)
+                foreach (var client in this.clients)
                     client.TcpClient.Client.Disconnect(false);
 
                 this.clients.Clear();
@@ -96,9 +84,12 @@ namespace ShipsServer.Networking
 
         public void Write(byte[] bytes)
         {
-            foreach (TCPClient client in this.clients)
+            lock (this.clients)
             {
-                Write(client.TcpClient, bytes);
+                foreach (var client in this.clients)
+                {
+                    Write(client.TcpClient, bytes);
+                }
             }
         }
 
@@ -106,42 +97,49 @@ namespace ShipsServer.Networking
         {
             try
             {
-                NetworkStream networkStream = tcpClient.GetStream();
+                var networkStream = tcpClient.GetStream();
                 networkStream.BeginWrite(bytes, 0, bytes.Length, WriteCallback, tcpClient);
             }
             catch (Exception)
             {
-                this.clients.RemoveAll(x => x.TcpClient == tcpClient);
+                lock (this.clients)
+                {
+                    this.clients.RemoveAll(x => x.TcpClient == tcpClient);
+                }
             }
         }
 
         private void WriteCallback(IAsyncResult result)
         {
-            TcpClient tcpClient = result.AsyncState as TcpClient;
-            if (tcpClient.Connected)
+            var tcpClient = result.AsyncState as TcpClient;
+            if (tcpClient != null && tcpClient.Connected)
             {
-                NetworkStream networkStream = tcpClient.GetStream();
+                var networkStream = tcpClient.GetStream();
                 networkStream.EndWrite(result);
             }
         }
 
         private void AcceptTcpClientCallback(IAsyncResult result)
         {
-            TcpClient tcpClient = Listener.EndAcceptTcpClient(result);
-            byte[] buffer = new byte[tcpClient.ReceiveBufferSize];
-            TCPClient client = new TCPClient(tcpClient);
+            var tcpClient = Listener.EndAcceptTcpClient(result);
+            var buffer = new byte[tcpClient.ReceiveBufferSize];
+            var client = new TCPClient(tcpClient);
             lock (this.clients)
                 this.clients.Add(client);
 
-            NetworkStream networkStream = client.NetworkStream;
+            var networkStream = client.NetworkStream;
             networkStream.BeginRead(client.Buffer, 0, client.Buffer.Length, ReadCallback, client);
             Listener.BeginAcceptTcpClient(AcceptTcpClientCallback, null);
         }
 
         private void ReadCallback(IAsyncResult result)
         {
-            TCPClient client = result.AsyncState as TCPClient;
+            var client = result.AsyncState as TCPClient;
             if (client == null)
+                return;
+
+            // Client disconnected
+            if (client.IsClosed || !client.TcpClient.Connected)
                 return;
 
             NetworkStream networkStream = null;
@@ -165,9 +163,10 @@ namespace ShipsServer.Networking
         {
             lock (this.clients)
             {
-                foreach (TCPClient client in this.clients.ToArray())
+                for (var i = 0; i < this.clients.ToArray().Length; ++i)
                 {
-                    if (!client.TcpClient.Connected)
+                    var client = this.clients.ToArray()[i];
+                    if (!client.TcpClient.Connected || client.IsClosed)
                         this.clients.Remove(client);
                 }
             }

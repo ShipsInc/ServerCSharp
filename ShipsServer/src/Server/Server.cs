@@ -48,7 +48,7 @@ namespace ShipsServer.Server
             if (_sessionsList.Count == 0)
                 return;
 
-            List<Session> oldSessions = new List<Session>();
+            var oldSessions = new List<Session>();
             lock (_sessionLock)
             {
                 oldSessions.AddRange(_sessionsList.Where(session => !session.Update(diff)));
