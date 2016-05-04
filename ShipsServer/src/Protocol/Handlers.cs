@@ -71,13 +71,13 @@ namespace ShipsServer.Server
             var player = battle.AddPlayer(this, new Board());
             player.Board.ReadPacket(packet);
 
-            battle.Status = BattleStatus.BATTLE_STATUS_WAIT_OPPONENT;
+            battle.Status = BattleStatus.BATTLE_STATUS_WAIT_OPONENT;
             BattleMgr.Instance.AddBattle(battle);
 
             // Ответ данных
             var response = new Packet((int)Opcodes.SMSG_BATTLE_INITIAL_BATTLE);
             response.WriteInt32(battle.Id);
-            response.WriteUInt8((byte)BattleStatus.BATTLE_STATUS_WAIT_OPPONENT);
+            response.WriteUInt8((byte)BattleStatus.BATTLE_STATUS_WAIT_OPONENT);
             Socket.SendPacket(response);
         }
 
@@ -211,13 +211,13 @@ namespace ShipsServer.Server
         private void HandleBattleLeave(Packet packet)
         {
             var battle = BattleMgr.Instance.GetBattle(packet.ReadInt32());
+            if (battle == null)
+                return;
 
             // Выход во врея игры
-            var oponent = battle?.GetOponentPlayer(this);
-            if (oponent == null) return;
-
+            var oponent = battle.GetOponentPlayer(this);
             battle.Finish(oponent, battle.GetPlayerBySession(this));
-            oponent.Session.SendPacket(new Packet((int) Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
+            oponent?.Session.SendPacket(new Packet((int) Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
         }
 
         private void HandleGetStatistics(Packet packet)

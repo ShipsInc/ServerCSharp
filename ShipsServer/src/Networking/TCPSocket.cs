@@ -8,28 +8,27 @@ using ShipsServer.Server;
 
 namespace ShipsServer.Networking
 {
-    public class TCPClient
+    public class TCPSocket
     {
-        public TcpClient TcpClient { get; private set; }
+        public Socket Socket { get; private set; }
         public byte[] Buffer { get; private set; }
-        public NetworkStream NetworkStream => TcpClient.GetStream();
         public bool IsClosed { get; set; }
         private Session _session;
 
-        public TCPClient(TcpClient tcpClient)
+        public TCPSocket(Socket socket)
         {
-            if (tcpClient == null)
-                throw new ArgumentNullException("tcpClient");
+            if (socket == null)
+                throw new ArgumentNullException("socket");
 
-            this.TcpClient = tcpClient;
+            this.Socket = socket;
             this.Buffer = new byte[256];
             this.IsClosed = false;
             this._session = null;
         }
 
-        ~TCPClient()
+        ~TCPSocket()
         {
-            TcpClient.Close();
+            Socket.Close();
         }
 
         public void Recivie(int bytes)
@@ -37,26 +36,29 @@ namespace ShipsServer.Networking
             if (bytes == 0)
                 return;
 
-            byte[] decryptBytes = Cryptography.Decrypt(Buffer);
-            Packet packet = ParsePacket(decryptBytes);
+            byte[] temp = Buffer;
+            Array.Resize(ref temp, bytes);
+            byte[] decryptBytes = Cryptography.Decrypt(temp);
+            var packet = ParsePacket(decryptBytes);
             Array.Clear(Buffer, 0, Buffer.Length);
             if (packet == null)
                 return;
 
-            Console.WriteLine($"Recivie packet {((Opcodes)packet.Opcode).ToString()} from client {TcpClient.Client.RemoteEndPoint.ToString()}");
+            Console.WriteLine($"Recivie packet {((Opcodes)packet.Opcode).ToString()} from client {Socket.RemoteEndPoint.ToString()}");
             PacketReader(packet); // Отправка пакета на выбор хэндлера
         }
 
         public void SendPacket(Packet packet)
         {
             WriteHeader(packet);
-            Console.WriteLine($"Send packet {((Opcodes)packet.Opcode).ToString()} to client {TcpClient.Client.RemoteEndPoint.ToString()}");
-            AsyncTcpServer.Instanse.Write(TcpClient, Cryptography.Encrypt(packet.ToArray()));
+            byte[] encryptBytes = Cryptography.Encrypt(packet.ToArray());
+            Console.WriteLine($"Send packet {((Opcodes)packet.Opcode).ToString()} to client {Socket.RemoteEndPoint.ToString()}");
+            AsyncTcpServer.Instanse.Send(this, encryptBytes);
         }
 
         public void Close()
         {
-            TcpClient.Close();
+            Socket.Close();
         }
 
         private Packet ParsePacket(byte[] bytes)
@@ -91,7 +93,7 @@ namespace ShipsServer.Networking
         {
             if ((Opcodes) packet.Opcode >= Opcodes.MAX_OPCODE)
             {
-                Console.WriteLine($"PacketReader: Unknown opcode {packet.Opcode} from client {TcpClient.Client.RemoteEndPoint.ToString()}");
+                Console.WriteLine($"PacketReader: Unknown opcode {packet.Opcode} from client {Socket.RemoteEndPoint.ToString()}");
                 return true;
             }
 
@@ -122,7 +124,7 @@ namespace ShipsServer.Networking
                 {
                     if (_session == null)
                     {
-                        Console.WriteLine($"PacketReader: Session is null for packet {((Opcodes)packet.Opcode).ToString()} from client {TcpClient.Client.RemoteEndPoint.ToString()}");
+                        Console.WriteLine($"PacketReader: Session is null for packet {((Opcodes)packet.Opcode).ToString()} from client {Socket.RemoteEndPoint.ToString()}");
                         return false;
                     }
 

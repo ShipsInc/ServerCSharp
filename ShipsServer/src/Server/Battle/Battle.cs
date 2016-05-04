@@ -21,11 +21,14 @@ namespace ShipsServer.Server.Battle
 
         public void Finish(Player winner, Player looser)
         {
+            Status = BattleStatus.BATTLE_STATUS_DONE;
+            if (winner == null || looser == null)
+                return;
+
             winner.Session.BattleStatistics.Wins += 1;
             winner.Session.BattleStatistics.LastBattle = Time.UnixTimeNow();
             looser.Session.BattleStatistics.Loose += 1;
             looser.Session.BattleStatistics.LastBattle = Time.UnixTimeNow();
-            Status = BattleStatus.BATTLE_STATUS_DONE;
         }
 
         public Player AddPlayer(Session session, Board board)

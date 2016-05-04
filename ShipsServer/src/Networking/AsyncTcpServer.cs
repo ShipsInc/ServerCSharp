@@ -11,7 +11,7 @@ namespace ShipsServer.Networking
     public class AsyncTcpServer
     {
         private TcpListener Listener;
-        private List<TCPClient> clients;
+        private List<TCPSocket> clients;
 
         private static object syncRoot = new object();
         private static AsyncTcpServer _instance;
@@ -58,7 +58,7 @@ namespace ShipsServer.Networking
             this._updateClients.Elapsed += new ElapsedEventHandler(UpdateClientsTimer);
 
             this.Encoding = Encoding.Default;
-            this.clients = new List<TCPClient>();
+            this.clients = new List<TCPSocket>();
         }
 
         public Encoding Encoding { get; set; }
@@ -67,7 +67,7 @@ namespace ShipsServer.Networking
         {
             Console.WriteLine($"Listener started {Listener.LocalEndpoint.ToString()}");
             this.Listener.Start();
-            this.Listener.BeginAcceptTcpClient(AcceptTcpClientCallback, null);
+            this.Listener.BeginAcceptTcpClient(AcceptSocketCallback, null);
         }
 
         public void Stop()
@@ -76,87 +76,82 @@ namespace ShipsServer.Networking
             lock (this.clients)
             {
                 foreach (var client in this.clients)
-                    client.TcpClient.Client.Disconnect(false);
+                    client.Socket.Shutdown(SocketShutdown.Both);
 
                 this.clients.Clear();
             }
         }
 
-        public void Write(byte[] bytes)
+        public void Send(byte[] bytes)
         {
             lock (this.clients)
             {
                 foreach (var client in this.clients)
                 {
-                    Write(client.TcpClient, bytes);
+                    Send(client, bytes);
                 }
             }
         }
 
-        public void Write(TcpClient tcpClient, byte[] bytes)
+        public void Send(TCPSocket tcpSocket, byte[] bytes)
         {
             try
             {
-                var networkStream = tcpClient.GetStream();
-                networkStream.BeginWrite(bytes, 0, bytes.Length, WriteCallback, tcpClient);
+                tcpSocket.Socket.BeginSend(bytes, 0, bytes.Length, 0, new AsyncCallback(SendCallback), tcpSocket);
             }
             catch (Exception)
             {
                 lock (this.clients)
                 {
-                    this.clients.RemoveAll(x => x.TcpClient == tcpClient);
+                    this.clients.RemoveAll(x => x.Socket == tcpSocket.Socket);
                 }
             }
         }
 
-        private void WriteCallback(IAsyncResult result)
+        private void SendCallback(IAsyncResult result)
         {
-            var tcpClient = result.AsyncState as TcpClient;
-            if (tcpClient != null && tcpClient.Connected)
-            {
-                var networkStream = tcpClient.GetStream();
-                networkStream.EndWrite(result);
-            }
+            var socket = result.AsyncState as TCPSocket;
+            if (socket == null || socket.IsClosed)
+                return;
+
+            socket.Socket.EndSend(result);
         }
 
-        private void AcceptTcpClientCallback(IAsyncResult result)
+        private void AcceptSocketCallback(IAsyncResult result)
         {
-            var tcpClient = Listener.EndAcceptTcpClient(result);
-            var buffer = new byte[tcpClient.ReceiveBufferSize];
-            var client = new TCPClient(tcpClient);
+            var socket = Listener.EndAcceptSocket(result);
+            var client = new TCPSocket(socket);
             lock (this.clients)
                 this.clients.Add(client);
 
-            var networkStream = client.NetworkStream;
-            networkStream.BeginRead(client.Buffer, 0, client.Buffer.Length, ReadCallback, client);
-            Listener.BeginAcceptTcpClient(AcceptTcpClientCallback, null);
+            socket.BeginReceive(client.Buffer, 0, client.Buffer.Length, 0, new AsyncCallback(ReadCallback), client);
+            Listener.BeginAcceptTcpClient(AcceptSocketCallback, null);
         }
 
         private void ReadCallback(IAsyncResult result)
         {
-            var client = result.AsyncState as TCPClient;
+            var client = result.AsyncState as TCPSocket;
             if (client == null)
                 return;
 
             // Client disconnected
-            if (client.IsClosed || !client.TcpClient.Connected)
+            if (client.IsClosed || !client.Socket.Connected)
                 return;
 
-            NetworkStream networkStream = null;
-            int read = 0;
+            int bytesRead = 0;
             try
             {
-                networkStream = client.NetworkStream;
-                read = networkStream.EndRead(result);
+                bytesRead = client.Socket.EndReceive(result);
+                client.Recivie(bytesRead);
+
+                Array.Clear(client.Buffer, 0, client.Buffer.Length);
+                client.Socket.BeginReceive(client.Buffer, 0, client.Buffer.Length, 0, new AsyncCallback(ReadCallback), client);
             }
-            catch (IOException exception)
+            catch (Exception exception)
             {
                 Console.WriteLine(exception.Message);
                 return;
             }
-
-            client.Recivie(read);
-            networkStream.BeginRead(client.Buffer, 0, client.Buffer.Length, ReadCallback, client);
         }
 
         private void UpdateClientsTimer(object source, ElapsedEventArgs e)
@@ -166,7 +161,7 @@ namespace ShipsServer.Networking
                 for (var i = 0; i < this.clients.ToArray().Length; ++i)
                 {
                     var client = this.clients.ToArray()[i];
-                    if (!client.TcpClient.Connected || client.IsClosed)
+                    if (!client.Socket.Connected || client.IsClosed)
                         this.clients.Remove(client);
                 }
             }

@@ -11,7 +11,7 @@ namespace ShipsServer.Server
     {
         private Int32 TimeOutTime { get; set; }
         private Int32 SaveInverval { get; set; }
-        private TCPClient Socket { get; set; }
+        private TCPSocket Socket { get; set; }
         public string Username { get; private set; }
         public UInt32 AccountId { get; private set; }
         public string Address { get; private set; }
@@ -32,25 +32,24 @@ namespace ShipsServer.Server
         public Statistics BattleStatistics { get; set; }
         private Queue<Packet> _packetQueue;
 
-        public Session(string username, UInt32 id, TCPClient client)
+        public Session(string username, UInt32 id, TCPSocket socket)
         {
             Username = username;
             AccountId = id;
-            Socket = client;
+            Socket = socket;
 
             IsLogout = false;
 
             SaveInverval = (Int32)Constants.SAVE_INTERVAL;
 
-            Address = client.TcpClient.Client.RemoteEndPoint.ToString();
+            Address = socket.Socket.RemoteEndPoint.ToString();
 
             _packetQueue = new Queue<Packet>();
             ResetTimeOutTime();
 
             BattleStatistics = new Statistics(id);
 
-            saveSessionTimer = new Timer(15000);
-            saveSessionTimer.Enabled = true;
+            saveSessionTimer = new Timer(15000) { Enabled = true };
             saveSessionTimer.Elapsed += new ElapsedEventHandler(SaveSession);
         }
 
@@ -63,7 +62,7 @@ namespace ShipsServer.Server
 
             if (IsConnectionIdle())
             {
-                Socket?.TcpClient.Close();
+                Socket?.Socket.Close();
                 return false;
             }
 
@@ -112,7 +111,7 @@ namespace ShipsServer.Server
 
         public void SendPacket(Packet packet)
         {
-            if (Socket == null || !Socket.TcpClient.Connected)
+            if (Socket == null || !Socket.Socket.Connected)
                 return;
 
             Socket.SendPacket(packet);

@@ -58,7 +58,7 @@
     <Compile Include="src\Networking\AsyncTcpServer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="src\Networking\TCPClient.cs" />
+    <Compile Include="src\Networking\TCPSocket.cs" />
     <Compile Include="src\Enums\RegistrationResponse.cs" />
     <Compile Include="src\Enums\AuthResponse.cs" />
     <Compile Include="src\Protocol\Handlers.cs" />
