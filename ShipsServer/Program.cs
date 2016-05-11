@@ -9,33 +9,16 @@ namespace ShipsServer
 {
     class Program
     {
-        private static readonly UInt32 SERVER_SLEEP_CONST = 50;
+        private static readonly UInt32 SERVER_SLEEP_CONST = 5;
 
         private static void ServerUpdateLoop()
         {
-            int realCurrTime = 0;
-            int realPrevTime = Time.GetMSTime();
-
-            int prevSleepTime = 0;
-
             ///- Work server
             while (true)
             {
                 ++Server.Server.ServerLoopCounter;
-                realCurrTime = Time.GetMSTime();
-
-                int diff = Time.GetMSTimeDiff(realPrevTime, realCurrTime);
-
-                Server.Server.Instance.Update(diff);
-                realPrevTime = realCurrTime;
-
-                if (diff <= SERVER_SLEEP_CONST + prevSleepTime)
-                {
-                    prevSleepTime = (int)SERVER_SLEEP_CONST + prevSleepTime - diff;
-                    Thread.Sleep((int)prevSleepTime);
-                }
-                else
-                    prevSleepTime = 0;
+                Server.Server.Instance.Update();
+                Thread.Sleep((int)SERVER_SLEEP_CONST);
             }
         }
 
@@ -46,11 +29,12 @@ namespace ShipsServer
             ThreadPool.SetMinThreads(2, 2);
         }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             InitialThreads();
             Task.Factory.StartNew(() => { new AsyncTcpServer(IPAddress.Parse("0.0.0.0"), 8085).Start(); });
-            ServerUpdateLoop();
+            var taskServer = Task.Factory.StartNew(ServerUpdateLoop);
+            Task.WaitAll(taskServer);
             AsyncTcpServer.Instanse.Stop();
         }
     }

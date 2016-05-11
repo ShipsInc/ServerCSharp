@@ -34,7 +34,7 @@ namespace ShipsServer.Server
             }
         }
 
-        public void Update(int diff)
+        public void Update()
         {
             lock (_sessionQueueLock)
             {
@@ -51,7 +51,7 @@ namespace ShipsServer.Server
             var oldSessions = new List<Session>();
             lock (_sessionLock)
             {
-                oldSessions.AddRange(_sessionsList.Where(session => !session.Update(diff)));
+                oldSessions.AddRange(_sessionsList.Where(session => !session.Update()));
             }
 
             if (oldSessions.Count != 0)
@@ -60,7 +60,7 @@ namespace ShipsServer.Server
                     RemoveSession(session.AccountId);
             }
 
-            BattleMgr.Instance.Update(diff);
+            BattleMgr.Instance.Update();
         }
 
         public void AddSessionQueue(Session session)

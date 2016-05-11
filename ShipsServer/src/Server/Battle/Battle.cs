@@ -11,7 +11,7 @@ namespace ShipsServer.Server.Battle
         public int Id { get; set; }
         public BattleStatus Status { get; set; }
 
-        private List<Player> _players;
+        private readonly List<Player> _players;
 
         public Battle()
         {

@@ -51,7 +51,7 @@ namespace ShipsServer.Networking
         public void SendPacket(Packet packet)
         {
             WriteHeader(packet);
-            byte[] encryptBytes = Cryptography.Encrypt(packet.ToArray());
+            var encryptBytes = Cryptography.Encrypt(packet.ToArray());
             Console.WriteLine($"Send packet {((Opcodes)packet.Opcode).ToString()} to client {Socket.RemoteEndPoint.ToString()}");
             AsyncTcpServer.Instanse.Send(this, encryptBytes);
         }

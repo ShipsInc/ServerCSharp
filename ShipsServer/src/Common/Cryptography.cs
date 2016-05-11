@@ -17,10 +17,8 @@ namespace ShipsServer.Common
                 using (MemoryStream ms = new MemoryStream())
                 {
                     using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
                         cs.Write(data, 0, data.Length);
-                        cs.Close();
-                    }
+
                     encryptBytes = ms.ToArray();
                 }
             }
@@ -37,10 +35,8 @@ namespace ShipsServer.Common
                 using (MemoryStream ms = new MemoryStream())
                 {
                     using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateDecryptor(), CryptoStreamMode.Write))
-                    {
                         cs.Write(data, 0, data.Length);
-                        cs.Close();
-                    }
+
                     decryptBytes = ms.ToArray();
                 }
             }

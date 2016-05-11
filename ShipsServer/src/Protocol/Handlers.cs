@@ -36,6 +36,9 @@ namespace ShipsServer.Server
                 case Opcodes.CMSG_GET_STATISTICS:
                     HandleGetStatistics(packet);
                     break;
+                case Opcodes.CMSG_CHAT_SEND_MESSAGE:
+                    HandleChatSendMessage(packet);
+                    break;
                 default:
                     Console.WriteLine($"Unknown opcode {((Opcodes)packet.Opcode).ToString()}");
                     break;
@@ -217,7 +220,7 @@ namespace ShipsServer.Server
             // Выход во врея игры
             var oponent = battle.GetOponentPlayer(this);
             battle.Finish(oponent, battle.GetPlayerBySession(this));
-            oponent?.Session.SendPacket(new Packet((int) Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
+            oponent?.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
         }
 
         private void HandleGetStatistics(Packet packet)
@@ -227,6 +230,23 @@ namespace ShipsServer.Server
             response.WriteUInt16((ushort)BattleStatistics.Wins);
             response.WriteUInt16((ushort)BattleStatistics.Loose);
             SendPacket(response);
+        }
+
+        private void HandleChatSendMessage(Packet packet)
+        {
+            var battle = BattleMgr.Instance.GetBattle(packet.ReadInt32());
+            if (battle == null)
+                return;
+
+            var text = packet.ReadUTF8String();
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            var oponent = battle.GetOponentPlayer(this);
+            var response = new Packet((int)Opcodes.SMSG_CHAT_MESSAGE);
+            response.WriteUTF8String(Username);
+            response.WriteUTF8String(text);
+            oponent?.Session.SendPacket(response);
         }
     }
 }

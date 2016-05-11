@@ -9,7 +9,6 @@ namespace ShipsServer.Server
 {
     public partial class Session
     {
-        private Int32 TimeOutTime { get; set; }
         private Int32 SaveInverval { get; set; }
         private TCPSocket Socket { get; set; }
         public string Username { get; private set; }
@@ -39,40 +38,21 @@ namespace ShipsServer.Server
             Socket = socket;
 
             IsLogout = false;
-
-            SaveInverval = (Int32)Constants.SAVE_INTERVAL;
-
+ 
             Address = socket.Socket.RemoteEndPoint.ToString();
 
             _packetQueue = new Queue<Packet>();
-            ResetTimeOutTime();
 
             BattleStatistics = new Statistics(id);
 
-            saveSessionTimer = new Timer(15000) { Enabled = true };
+            saveSessionTimer = new Timer(Constants.SAVE_INTERVAL) { Enabled = true };
             saveSessionTimer.Elapsed += new ElapsedEventHandler(SaveSession);
         }
 
-        public bool Update(int diff)
+        public bool Update()
         {
             if (IsLogout)
                 return false;
-
-            UpdateTimeOutTime(diff);
-
-            if (IsConnectionIdle())
-            {
-                Socket?.Socket.Close();
-                return false;
-            }
-
-            if (SaveInverval < diff)
-            {
-                BattleStatistics.SaveToDB();
-                SaveInverval = Constants.SAVE_INTERVAL;
-            }
-            else
-                SaveInverval -= (int) diff;
 
             if (_packetQueue.Count != 0)
             {
@@ -92,21 +72,6 @@ namespace ShipsServer.Server
         public void KickPlayer()
         {
             Socket?.Close();
-        }
-
-        private void UpdateTimeOutTime(int diff)
-        {
-            TimeOutTime -= (int)diff;
-        }
-
-        private void ResetTimeOutTime()
-        {
-            TimeOutTime = (int)Constants.SOCKET_TIMEOUT;
-        }
-
-        private bool IsConnectionIdle()
-        {
-            return TimeOutTime <= 0;
         }
 
         public void SendPacket(Packet packet)

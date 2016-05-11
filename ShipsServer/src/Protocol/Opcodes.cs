@@ -29,6 +29,8 @@
         CMSG_GET_STATISTICS             = 0x019,
         SMSG_GET_STATISTICS_RESPONSE    = 0x01A,
         CMSG_DISCONNECTED               = 0x01B,
+        CMSG_CHAT_SEND_MESSAGE          = 0x01C,
+        SMSG_CHAT_MESSAGE               = 0x01D,
         MAX_OPCODE,
     }
 }

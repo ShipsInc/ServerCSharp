@@ -8,7 +8,7 @@ using System.Timers;
 
 namespace ShipsServer.Networking
 {
-    public class AsyncTcpServer
+    public class AsyncTcpServer : IDisposable
     {
         private TcpListener Listener;
         private List<TCPSocket> clients;
@@ -165,6 +165,11 @@ namespace ShipsServer.Networking
                         this.clients.Remove(client);
                 }
             }
+        }
+
+        public void Dispose()
+        {
+            _updateClients.Dispose();
         }
     }
 }
