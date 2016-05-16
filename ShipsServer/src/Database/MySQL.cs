@@ -44,12 +44,13 @@ namespace ShipsServer.Database
             return true;
         }
 
-        public int PExecute(string query)
+        public long PExecute(string query)
         {
             var cmd = new MySqlCommand(query, connection);
             try
             {
-                return cmd.ExecuteNonQuery();
+                cmd.ExecuteNonQuery();
+                return cmd.LastInsertedId;
             }
             catch (Exception e)
             {

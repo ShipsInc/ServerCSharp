@@ -9,7 +9,6 @@ namespace ShipsServer.Server
 {
     public partial class Session
     {
-        private Int32 SaveInverval { get; set; }
         private TCPSocket Socket { get; set; }
         public string Username { get; private set; }
         public UInt32 AccountId { get; private set; }
@@ -67,11 +66,6 @@ namespace ShipsServer.Server
             }
 
             return true;
-        }
-
-        public void KickPlayer()
-        {
-            Socket?.Close();
         }
 
         public void SendPacket(Packet packet)

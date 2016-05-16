@@ -11,6 +11,8 @@
         public static readonly string DB_HOST               = "127.0.0.1";
         public static readonly string DB_USERNAME           = "ships";
         public static readonly string DB_PASSWORD           = "vxkAVUfdfX";
+        //public static readonly string DB_USERNAME           = "root";
+        //public static readonly string DB_PASSWORD           = "root";
         public static readonly string DB_DBNAME             = "ships";
         public static readonly int DB_PORT                  = 3306;
 
