@@ -1,18 +1,12 @@
 ﻿using System;
 using MySql.Data.MySqlClient;
+using ShipsServer.Common;
 
 namespace ShipsServer.Database
 {
     public class MySQL : IDisposable
     {
-        private const string Host = "127.0.0.1";
-        private const string Username = "root";
-        private const string Password = "root";
-        private const int Port = 3306;
-
-        private MySQL() { }
-
-        private string DatabaseName { get; set; } = "ships";
+        public MySQL() { }
 
         private MySqlConnection connection = null;
 
@@ -28,6 +22,26 @@ namespace ShipsServer.Database
                 _instance = new MySQL();
 
             return _instance;
+        }
+
+        public bool Initialization()
+        {
+            if (string.IsNullOrEmpty(Constants.DB_DBNAME))
+                return false;
+
+            Console.WriteLine("MySQL Initialization...");
+            try
+            {
+                connection = new MySqlConnection($"Server={Constants.DB_HOST}; database={Constants.DB_DBNAME}; UID={Constants.DB_USERNAME}; password={Constants.DB_PASSWORD}; port={Constants.DB_PORT}");
+                connection.Open();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"MySQL initialization error: {e.Message}");
+                return false;
+            }
+
+            return true;
         }
 
         public int PExecute(string query)
@@ -68,22 +82,7 @@ namespace ShipsServer.Database
             if (Connection != null)
                 return true;
 
-            if (string.IsNullOrEmpty(DatabaseName))
-                return false;
-
-            bool result = false;
-            try
-            {
-                connection = new MySqlConnection($"Server={Host}; database={DatabaseName}; UID={Username}; password={Password}; port={Port}");
-                connection.Open();
-                result = true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"MySQL Exeption: {0}", e.Message);
-            }
-
-            return result;
+            return Initialization();
         }
 
         public void BeginTransaction()
@@ -112,7 +111,7 @@ namespace ShipsServer.Database
 
         public override string ToString()
         {
-            return !IsConnect() ? string.Format($"MySQL: Failed connect to {0}", DatabaseName) : string.Format($"MySQL: Connect to {0}. Server version: {1}", DatabaseName, connection.ServerVersion);
+            return !IsConnect() ? string.Format($"MySQL: Failed connect to {0}", Constants.DB_DBNAME) : string.Format($"MySQL: Connect to {0}. Server version: {1}", Constants.DB_DBNAME, connection.ServerVersion);
         }
 
         public void Dispose()

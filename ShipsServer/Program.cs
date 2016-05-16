@@ -2,12 +2,12 @@
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using ShipsServer.Database;
 using ShipsServer.Networking;
-using Time = ShipsServer.Common.Time;
 
 namespace ShipsServer
 {
-    class Program
+    static class Program
     {
         private static readonly UInt32 SERVER_SLEEP_CONST = 5;
 
@@ -32,6 +32,9 @@ namespace ShipsServer
         private static void Main(string[] args)
         {
             InitialThreads();
+            if (!MySQL.Instance().Initialization())
+                return;
+
             Task.Factory.StartNew(() => { new AsyncTcpServer(IPAddress.Parse("0.0.0.0"), 8085).Start(); });
             var taskServer = Task.Factory.StartNew(ServerUpdateLoop);
             Task.WaitAll(taskServer);

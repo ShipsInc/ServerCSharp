@@ -161,14 +161,14 @@ namespace ShipsServer.Server
 
                     battle.Finish(player, oponent);
                 }
-
-                var oponentShotResult = new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_SHOT_RESULT);
-                oponentShotResult.WriteUInt8((byte)result);
-                oponentShotResult.WriteUInt8((byte)x);
-                oponentShotResult.WriteUInt8((byte)y);
-                oponent.Session.SendPacket(oponentShotResult);
                 return;
             }
+
+            var oponentShotResult = new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_SHOT_RESULT);
+            oponentShotResult.WriteUInt8((byte)result);
+            oponentShotResult.WriteUInt8((byte)x);
+            oponentShotResult.WriteUInt8((byte)y);
+            oponent.Session.SendPacket(oponentShotResult);
 
             oponent.CanShot = true;
             oponent.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_CAN_SHOT));
