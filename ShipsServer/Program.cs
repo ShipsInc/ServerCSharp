@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ShipsServer.Database;
 using ShipsServer.Networking;
+using ShipsServer.Protocol.Parser;
 
 namespace ShipsServer
 {
@@ -16,7 +17,6 @@ namespace ShipsServer
             ///- Work server
             while (true)
             {
-                ++Server.Server.ServerLoopCounter;
                 Server.Server.Instance.Update();
                 Thread.Sleep((int)SERVER_SLEEP_CONST);
             }
@@ -32,6 +32,10 @@ namespace ShipsServer
         private static void Main(string[] args)
         {
             InitialThreads();
+            Console.WriteLine("Loading handlers...");
+            Handler.LoadHandlers();
+
+            Console.WriteLine("MySQL Initialization...");
             if (!MySQL.Instance().Initialization())
                 return;
 

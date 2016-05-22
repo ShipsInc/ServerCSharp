@@ -31,7 +31,7 @@ namespace ShipsServer.Networking
             Socket.Close();
         }
 
-        public void Recivie(int bytes)
+        public void Receive(int bytes)
         {
             if (bytes == 0)
                 return;
@@ -44,7 +44,7 @@ namespace ShipsServer.Networking
             if (packet == null)
                 return;
 
-            Console.WriteLine($"Recivie packet {((Opcodes)packet.Opcode).ToString()} from client {Socket.RemoteEndPoint.ToString()}");
+            Console.WriteLine($"Receive packet {packet.Opcode} from client {Socket.RemoteEndPoint}");
             PacketReader(packet); // Отправка пакета на выбор хэндлера
         }
 
@@ -52,7 +52,7 @@ namespace ShipsServer.Networking
         {
             WriteHeader(packet);
             var encryptBytes = Cryptography.Encrypt(packet.ToArray());
-            Console.WriteLine($"Send packet {((Opcodes)packet.Opcode).ToString()} to client {Socket.RemoteEndPoint.ToString()}");
+            Console.WriteLine($"Send packet {packet.Opcode} to client {Socket.RemoteEndPoint}");
             AsyncTcpServer.Instanse.Send(this, encryptBytes);
         }
 
@@ -64,10 +64,10 @@ namespace ShipsServer.Networking
         private Packet ParsePacket(byte[] bytes)
         {
             var buffer = new ByteBuffer(bytes);
-            UInt16 opcode = buffer.ReadUInt16();
+            Opcode opcode = (Opcode)buffer.ReadUInt16();
             UInt16 size = buffer.ReadUInt16();
 
-            if ((Opcodes)opcode >= Opcodes.MAX_OPCODE)
+            if (opcode >= Opcode.MAX_OPCODE)
                 return null;
 
             if (size > 1000)
@@ -91,31 +91,31 @@ namespace ShipsServer.Networking
 
         private bool PacketReader(Packet packet)
         {
-            if ((Opcodes) packet.Opcode >= Opcodes.MAX_OPCODE)
+            if (packet.Opcode >= Opcode.MAX_OPCODE)
             {
                 Console.WriteLine($"PacketReader: Unknown opcode {packet.Opcode} from client {Socket.RemoteEndPoint.ToString()}");
                 return true;
             }
 
-            switch ((Opcodes)packet.Opcode)
+            switch (packet.Opcode)
             {
-                case Opcodes.CMSG_AUTH:
+                case Opcode.CMSG_AUTH:
                 {
                     HandleAuth(packet);
                     break;
                 }
-                case Opcodes.CMSG_REGISTRATION:
+                case Opcode.CMSG_REGISTRATION:
                 {
                     HandleRegistration(packet);
                     break;
                 }
-                case Opcodes.CMSG_LOGOUT:
+                case Opcode.CMSG_LOGOUT:
                 {
                     _session.IsLogout = true;
                     _session = null;
                     break;
                 }
-                case Opcodes.CMSG_DISCONNECTED:
+                case Opcode.CMSG_DISCONNECTED:
                 {
                     IsClosed = true;
                     break;
@@ -124,7 +124,7 @@ namespace ShipsServer.Networking
                 {
                     if (_session == null)
                     {
-                        Console.WriteLine($"PacketReader: Session is null for packet {((Opcodes)packet.Opcode).ToString()} from client {Socket.RemoteEndPoint.ToString()}");
+                        Console.WriteLine($"PacketReader: Session is null for packet {packet.Opcode} from client {Socket.RemoteEndPoint}");
                         return false;
                     }
 
@@ -169,7 +169,7 @@ namespace ShipsServer.Networking
                 Server.Server.Instance.AddSessionQueue(_session);
             }
 
-            var response = new Packet((int)Opcodes.SMSG_AUTH_RESPONSE);
+            var response = new Packet(Opcode.SMSG_AUTH_RESPONSE);
             response.WriteUInt8((byte)responseCode);
             SendPacket(response);
         }
@@ -202,7 +202,7 @@ namespace ShipsServer.Networking
                     responseCode = RegistrationResponse.REG_RESPONSE_UNKNOWN_ERROR;
             }
 
-            var response = new Packet((int)Opcodes.SMSG_REGISTRATION_RESPONSE);
+            var response = new Packet(Opcode.SMSG_REGISTRATION_RESPONSE);
             response.WriteUInt8((byte)responseCode);
             SendPacket(response);
         }

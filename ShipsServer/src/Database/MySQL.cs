@@ -29,7 +29,6 @@ namespace ShipsServer.Database
             if (string.IsNullOrEmpty(Constants.DB_DBNAME))
                 return false;
 
-            Console.WriteLine("MySQL Initialization...");
             try
             {
                 connection = new MySqlConnection($"Server={Constants.DB_HOST}; database={Constants.DB_DBNAME}; UID={Constants.DB_USERNAME}; password={Constants.DB_PASSWORD}; port={Constants.DB_PORT}");

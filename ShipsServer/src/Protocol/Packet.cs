@@ -1,20 +1,19 @@
-﻿using System.Runtime.CompilerServices;
-using ShipsServer.Networking;
+﻿using ShipsServer.Networking;
 
 namespace ShipsServer.Protocol
 {
     public class Packet : ByteBuffer
     {
-        public int Opcode { get; private set; }
+        public Opcode Opcode { get; private set; }
 
         public Packet() : base()
         {
-            this.Opcode = 0;
+            Opcode = 0;
         }
 
-        public Packet(int opcode) : base()
+        public Packet(Opcode opcode) : base()
         {
-            this.Opcode = opcode;
+            Opcode = opcode;
         }
     }
 }

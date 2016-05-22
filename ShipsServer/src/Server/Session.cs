@@ -4,12 +4,13 @@ using System.Timers;
 using ShipsServer.Common;
 using ShipsServer.Networking;
 using ShipsServer.Protocol;
+using ShipsServer.Protocol.Parser;
 
 namespace ShipsServer.Server
 {
-    public partial class Session
+    public class Session
     {
-        private TCPSocket Socket { get; set; }
+        public TCPSocket Socket { get; private set; }
         public string Username { get; private set; }
         public UInt32 AccountId { get; private set; }
         public string Address { get; private set; }
@@ -60,7 +61,7 @@ namespace ShipsServer.Server
                     while (_packetQueue.Count != 0)
                     {
                         var packet = _packetQueue.Dequeue();
-                        SelectHandler(packet);
+                        Handler.SelectHandler(this, packet);
                     }
                 }
             }

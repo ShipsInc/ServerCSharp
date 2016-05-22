@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -142,7 +141,7 @@ namespace ShipsServer.Networking
             try
             {
                 bytesRead = client.Socket.EndReceive(result);
-                client.Recivie(bytesRead);
+                client.Receive(bytesRead);
 
                 Array.Clear(client.Buffer, 0, client.Buffer.Length);
                 client.Socket.BeginReceive(client.Buffer, 0, client.Buffer.Length, 0, new AsyncCallback(ReadCallback), client);

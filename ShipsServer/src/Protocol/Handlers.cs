@@ -1,111 +1,80 @@
 ﻿using System;
 using ShipsServer.Common;
 using ShipsServer.Enums;
-using ShipsServer.Protocol;
+using ShipsServer.Protocol.Parser;
+using ShipsServer.Server;
 using ShipsServer.Server.Battle;
 
-namespace ShipsServer.Server
+namespace ShipsServer.Protocol
 {
-    public partial class Session
+    public class Handlers
     {
-        private void SelectHandler(Packet packet)
+        [Parser(Opcode.CMSG_KEEP_ALIVE)]
+        public static void HandleKeepAlive(Session session, Packet packet)
         {
-            switch ((Opcodes)packet.Opcode)
-            {
-                case Opcodes.CMSG_KEEP_ALIVE:
-                    HandleKeepAlive(packet);
-                    break;
-                case Opcodes.CMSG_PROFILE:
-                    HandleProfile(packet);
-                    break;
-                case Opcodes.CMSG_GET_GAMES:
-                    HandleGetGames(packet);
-                    break;
-                case Opcodes.CMSG_BATTLE_INITIALIZATION:
-                    HandleBattleInitialization(packet);
-                    break;
-                case Opcodes.CMSG_BATTLE_SHOT:
-                    HandleBattleShot(packet);
-                    break;
-                case Opcodes.CMSG_BATTLE_JOIN:
-                    HandleBattleJoin(packet);
-                    break;
-                case Opcodes.CMSG_BATTLE_LEAVE:
-                    HandleBattleLeave(packet);
-                    break;
-                case Opcodes.CMSG_GET_STATISTICS:
-                    HandleGetStatistics(packet);
-                    break;
-                case Opcodes.CMSG_CHAT_SEND_MESSAGE:
-                    HandleChatSendMessage(packet);
-                    break;
-                default:
-                    Console.WriteLine($"Unknown opcode {((Opcodes)packet.Opcode).ToString()}");
-                    break;
-            }
+            var response = new Packet(Opcode.SMSG_KEEP_ALIVE);
+            session.Socket.SendPacket(response);
         }
 
-        private void HandleKeepAlive(Packet packet)
+        [Parser(Opcode.CMSG_PROFILE)]
+        public static void HandleProfile(Session session, Packet packet)
         {
-            var response = new Packet((int)Opcodes.SMSG_KEEP_ALIVE);
-            Socket.SendPacket(response);
+            var response = new Packet(Opcode.SMSG_PROFILE_RESPONSE);
+            response.WriteUTF8String(session.Username);
+            session.Socket.SendPacket(response);
         }
 
-        private void HandleProfile(Packet packet)
+        [Parser(Opcode.CMSG_GET_GAMES)]
+        public static void HandleGetGames(Session session, Packet packet)
         {
-            var response = new Packet((int)Opcodes.SMSG_PROFILE_RESPONSE);
-            response.WriteUTF8String(Username);
-            Socket.SendPacket(response);
-        }
-
-        private void HandleGetGames(Packet packet)
-        {
-            var response = new Packet((int)Opcodes.SMSG_GET_GAMES_RESPONSE);
+            var response = new Packet(Opcode.SMSG_GET_GAMES_RESPONSE);
             response.WriteInt32(BattleMgr.Instance.BattleList.Count);
             foreach (var battle in BattleMgr.Instance.BattleList)
                 response.WriteInt32(battle.Id);
 
-            Socket.SendPacket(response);
+            session.Socket.SendPacket(response);
         }
 
-        private void HandleBattleInitialization(Packet packet)
+        [Parser(Opcode.CMSG_BATTLE_INITIALIZATION)]
+        public static void HandleBattleInitialization(Session session, Packet packet)
         {
-            var battle = new Battle.Battle();
-            var player = battle.AddPlayer(this, new Board());
+            var battle = new Server.Battle.Battle();
+            var player = battle.AddPlayer(session, new Board());
             player.Board.ReadPacket(packet);
 
             battle.Status = BattleStatus.BATTLE_STATUS_WAIT_OPONENT;
             BattleMgr.Instance.AddBattle(battle);
 
             // Ответ данных
-            var response = new Packet((int)Opcodes.SMSG_BATTLE_INITIAL_BATTLE);
+            var response = new Packet(Opcode.SMSG_BATTLE_INITIAL_BATTLE);
             response.WriteInt32(battle.Id);
             response.WriteUInt8((byte)BattleStatus.BATTLE_STATUS_WAIT_OPONENT);
-            Socket.SendPacket(response);
+            session.Socket.SendPacket(response);
         }
 
-        private void HandleBattleShot(Packet packet)
+        [Parser(Opcode.CMSG_BATTLE_SHOT)]
+        public static void HandleBattleShot(Session session, Packet packet)
         {
             var battle = BattleMgr.Instance.GetBattle(packet.ReadInt32());
             if (battle == null)
             {
-                var response = new Packet((int)Opcodes.SMSG_BATTLE_RESPONSE);
+                var response = new Packet(Opcode.SMSG_BATTLE_RESPONSE);
                 response.WriteUInt8((byte)BattleResponse.BATTLE_RESPONSE_UNKNOWN_ERROR);
                 return;
             }
 
-            var player = battle.GetPlayerBySession(this);
-            var oponent = battle.GetOponentPlayer(this);
+            var player = battle.GetPlayerBySession(session);
+            var oponent = battle.GetOponentPlayer(session);
             if (player == null || oponent == null)
             {
-                var response = new Packet((int)Opcodes.SMSG_BATTLE_RESPONSE);
+                var response = new Packet(Opcode.SMSG_BATTLE_RESPONSE);
                 response.WriteUInt8((byte)BattleResponse.BATTLE_RESPONSE_UNKNOWN_ERROR);
                 return;
             }
 
             if (!player.CanShot)
             {
-                var response = new Packet((int)Opcodes.SMSG_BATTLE_RESPONSE);
+                var response = new Packet(Opcode.SMSG_BATTLE_RESPONSE);
                 response.WriteUInt8((byte)BattleResponse.BATTLE_RESPONSE_CANT_SHOT);
                 return;
             }
@@ -116,11 +85,11 @@ namespace ShipsServer.Server
             var result = player.Shot(x, y, oponent);
 
             var opcode = result == ShotResult.SHOT_RESULT_SHIP_DROWNED
-                ? Opcodes.SMSG_BATTLE_SHIP_DROWNED
-                : Opcodes.SMSG_BATTLE_SHOT_RESULT;
+                ? Opcode.SMSG_BATTLE_SHIP_DROWNED
+                : Opcode.SMSG_BATTLE_SHOT_RESULT;
 
-            var shot = new Packet((int)opcode);
-            if (shot.Opcode == (int)Opcodes.SMSG_BATTLE_SHOT_RESULT)
+            var shot = new Packet(opcode);
+            if (shot.Opcode == Opcode.SMSG_BATTLE_SHOT_RESULT)
             {
                 shot.WriteUInt8((byte)result);
                 shot.WriteUInt8((byte)x);
@@ -144,13 +113,19 @@ namespace ShipsServer.Server
 
             player.Session.SendPacket(shot);
 
+            var oponentShotResult = new Packet(Opcode.SMSG_BATTLE_OPONENT_SHOT_RESULT);
+            oponentShotResult.WriteUInt8((byte)result);
+            oponentShotResult.WriteUInt8((byte)x);
+            oponentShotResult.WriteUInt8((byte)y);
+            oponent.Session.SendPacket(oponentShotResult);
+
             if (result != ShotResult.SHOT_RESULT_MISSED)
             {
                 // Все корабли противника разрушены
                 if (oponent.Board.IsAllShipsDrowned())
                 {
                     // Игроку который выйграл
-                    var finishPacket = new Packet((int)Opcodes.SMSG_BATTLE_FINISH);
+                    var finishPacket = new Packet(Opcode.SMSG_BATTLE_FINISH);
                     finishPacket.WriteUInt8(1);
                     player.Session.SendPacket(finishPacket);
 
@@ -164,41 +139,36 @@ namespace ShipsServer.Server
                 return;
             }
 
-            var oponentShotResult = new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_SHOT_RESULT);
-            oponentShotResult.WriteUInt8((byte)result);
-            oponentShotResult.WriteUInt8((byte)x);
-            oponentShotResult.WriteUInt8((byte)y);
-            oponent.Session.SendPacket(oponentShotResult);
-
             oponent.CanShot = true;
-            oponent.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_CAN_SHOT));
+            oponent.Session.SendPacket(new Packet(Opcode.SMSG_BATTLE_CAN_SHOT));
         }
 
-        private void HandleBattleJoin(Packet packet)
+        [Parser(Opcode.CMSG_BATTLE_JOIN)]
+        public static void HandleBattleJoin(Session session, Packet packet)
         {
             var battle = BattleMgr.Instance.GetBattle(packet.ReadInt32());
             if (battle == null)
             {
-                var response = new Packet((int)Opcodes.SMSG_BATTLE_RESPONSE);
+                var response = new Packet(Opcode.SMSG_BATTLE_RESPONSE);
                 response.WriteUInt8((byte)BattleResponse.BATTLE_RESPONSE_UNKNOWN_ERROR);
                 return;
             }
 
             var player = battle.GetPlayer(0);
-            var player2 = battle.AddPlayer(this, new Board());
+            var player2 = battle.AddPlayer(session, new Board());
 
             player2.Board.ReadPacket(packet);
 
             battle.Status = BattleStatus.BATTLE_STATUS_BATTLE;
 
             // Отправка информации о противнике для первого игрока
-            var joined = new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_JOINED);
+            var joined = new Packet(Opcode.SMSG_BATTLE_OPONENT_JOINED);
             joined.WriteUTF8String(player.Session.Username);
             joined.WriteUTF8String(player2.Session.Username);
             player.Session.SendPacket(joined);
 
             // Отправка информации о противнике для второго игрока
-            var plrResponse = new Packet((int)Opcodes.SMSG_BATTLE_RESPONSE);
+            var plrResponse = new Packet(Opcode.SMSG_BATTLE_RESPONSE);
             plrResponse.WriteUInt8((byte)BattleResponse.BATTLE_RESPONSE_JOIN_SUCCESS);
             plrResponse.WriteInt32(battle.Id);
             plrResponse.WriteUTF8String(player2.Session.Username);
@@ -208,31 +178,34 @@ namespace ShipsServer.Server
             // Выбор случайного игрока для начала
             var canPlayer = battle.GetPlayer(new Random().Next(Constants.MAX_BATTLE_PLAYERS));
             canPlayer.CanShot = true;
-            canPlayer.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_CAN_SHOT));
+            canPlayer.Session.SendPacket(new Packet(Opcode.SMSG_BATTLE_CAN_SHOT));
         }
 
-        private void HandleBattleLeave(Packet packet)
+        [Parser(Opcode.CMSG_BATTLE_LEAVE)]
+        public static void HandleBattleLeave(Session session, Packet packet)
         {
             var battle = BattleMgr.Instance.GetBattle(packet.ReadInt32());
             if (battle == null)
                 return;
 
             // Выход во врея игры
-            var oponent = battle.GetOponentPlayer(this);
-            battle.Finish(oponent, battle.GetPlayerBySession(this));
-            oponent?.Session.SendPacket(new Packet((int)Opcodes.SMSG_BATTLE_OPONENT_LEAVE));
+            var oponent = battle.GetOponentPlayer(session);
+            battle.Finish(oponent, battle.GetPlayerBySession(session));
+            oponent?.Session.SendPacket(new Packet(Opcode.SMSG_BATTLE_OPONENT_LEAVE));
         }
 
-        private void HandleGetStatistics(Packet packet)
+        [Parser(Opcode.CMSG_GET_STATISTICS)]
+        public static void HandleGetStatistics(Session session, Packet packet)
         {
-            var response = new Packet((int)Opcodes.SMSG_GET_STATISTICS_RESPONSE);
-            response.WriteUInt32((uint)BattleStatistics.LastBattle);
-            response.WriteUInt16((ushort)BattleStatistics.Wins);
-            response.WriteUInt16((ushort)BattleStatistics.Loose);
-            SendPacket(response);
+            var response = new Packet(Opcode.SMSG_GET_STATISTICS_RESPONSE);
+            response.WriteUInt32((uint)session.BattleStatistics.LastBattle);
+            response.WriteUInt16((ushort)session.BattleStatistics.Wins);
+            response.WriteUInt16((ushort)session.BattleStatistics.Loose);
+            session.Socket.SendPacket(response);
         }
 
-        private void HandleChatSendMessage(Packet packet)
+        [Parser(Opcode.CMSG_CHAT_SEND_MESSAGE)]
+        public static void HandleChatSendMessage(Session session, Packet packet)
         {
             var battle = BattleMgr.Instance.GetBattle(packet.ReadInt32());
             if (battle == null)
@@ -242,9 +215,9 @@ namespace ShipsServer.Server
             if (string.IsNullOrEmpty(text))
                 return;
 
-            var oponent = battle.GetOponentPlayer(this);
-            var response = new Packet((int)Opcodes.SMSG_CHAT_MESSAGE);
-            response.WriteUTF8String(Username);
+            var oponent = battle.GetOponentPlayer(session);
+            var response = new Packet(Opcode.SMSG_CHAT_MESSAGE);
+            response.WriteUTF8String(session.Username);
             response.WriteUTF8String(text);
             oponent?.Session.SendPacket(response);
         }

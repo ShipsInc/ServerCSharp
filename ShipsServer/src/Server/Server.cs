@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using ShipsServer.Networking;
 using ShipsServer.Server.Battle;
 
 namespace ShipsServer.Server
 {
     class Server
     {
-        public static UInt32 ServerLoopCounter { get; set; }
-
         private static Server _instance;
 
         public Queue<Session> _sessionsQueue;
